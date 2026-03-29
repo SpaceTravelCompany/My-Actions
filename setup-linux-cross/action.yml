@@ -5,7 +5,16 @@ runs:
   steps:
     - name: Setup cross-compilation environment
       shell: bash
-      run: | 
+      run: |
+        printf '%s\n' \
+        'deb [arch=arm64,armhf,riscv64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe' \
+        'deb [arch=arm64,armhf,riscv64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe' \
+        'deb [arch=arm64,armhf,riscv64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe' \
+        'deb [arch=i386] http://archive.ubuntu.com/ubuntu noble main restricted' \
+        'deb [arch=i386] http://archive.ubuntu.com/ubuntu noble-updates main restricted' \
+        'deb [arch=i386] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted' \
+        | sudo tee /etc/apt/sources.list.d/cross-arch.list > /dev/null
+        
         sudo dpkg --add-architecture arm64
         sudo dpkg --add-architecture riscv64
         sudo dpkg --add-architecture i386
