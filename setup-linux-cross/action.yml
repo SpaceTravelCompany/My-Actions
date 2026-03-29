@@ -6,13 +6,40 @@ runs:
     - name: Setup cross-compilation environment
       shell: bash
       run: |
+        # Fix apt mirrors
         sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu|g' \
-        /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
+          /etc/apt/sources.list 2>/dev/null || true
+        sudo find /etc/apt/sources.list.d -name "*.list" \
+          -exec sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu|g' {} + 2>/dev/null || true
+
+        # Restrict existing sources to amd64 only
+        sudo sed -i '/^deb /s/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+        sudo find /etc/apt/sources.list.d -name "*.list" \
+          -exec sed -i '/^deb /s/^deb /deb [arch=amd64] /' {} + 2>/dev/null || true
+
+        # Add foreign architectures
         sudo dpkg --add-architecture arm64
         sudo dpkg --add-architecture riscv64
         sudo dpkg --add-architecture i386
         sudo dpkg --add-architecture armhf
-        sudo apt-get update || true
+
+        # Add ports.ubuntu.com for foreign arch packages
+        sudo tee /etc/apt/sources.list.d/cross-arch.list > /dev/null << 'EOF'
+        deb [arch=arm64,armhf,riscv64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe
+        deb [arch=arm64,armhf,riscv64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe
+        deb [arch=arm64,armhf,riscv64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe
+        EOF
+
+        # i386 is available on archive.ubuntu.com
+        sudo tee /etc/apt/sources.list.d/i386-arch.list > /dev/null << 'EOF'
+        deb [arch=i386] http://archive.ubuntu.com/ubuntu noble main restricted universe
+        deb [arch=i386] http://archive.ubuntu.com/ubuntu noble-updates main restricted universe
+        deb [arch=i386] http://security.ubuntu.com/ubuntu noble-security main restricted universe
+        EOF
+
+        sudo apt-get update
+
+        # Install cross-compiler toolchains
         sudo apt-get install -y \
           gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
           gcc-riscv64-linux-gnu g++-riscv64-linux-gnu \
