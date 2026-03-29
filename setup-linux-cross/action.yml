@@ -6,6 +6,8 @@ runs:
     - name: Setup cross-compilation environment
       shell: bash
       run: |
+        sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu|g' \
+        /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
         sudo dpkg --add-architecture arm64
         sudo dpkg --add-architecture riscv64
         sudo dpkg --add-architecture i386
